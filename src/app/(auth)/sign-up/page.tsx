@@ -4,6 +4,9 @@ import { useForm } from "react-hook-form";
 import { createUserWithEmailAndPassword } from "@/actions/auth-actions";
 import { signUpInput } from "@/validators/auth-schema";
 
+import UserContext from "@/context/user-context";
+import { useRouter } from "next/navigation";
+
 type SignUpInputType = {
   fullname: string;
   email: string;
@@ -15,6 +18,11 @@ const SignUp = () => {
   const [successMessage, setSuccessMessage] = React.useState<string | null>(
     null,
   );
+
+  const router = useRouter();
+
+  const userContext = React.useContext(UserContext);
+
   const {
     register,
     handleSubmit,
@@ -84,7 +92,7 @@ const SignUp = () => {
         });
       } else {
         const result = await createUserWithEmailAndPassword(data);
-        if (!result.success) {
+        if (!result.success || !result.user) {
           setSuccessMessage(null);
           setError("root", {
             type: "manual",
@@ -92,7 +100,16 @@ const SignUp = () => {
           });
         } else {
           // Handle successful sign-up, e.g., redirect to dashboard or show success message
+          userContext?.setUser({
+            id: `${result.user.id}`,
+            name: result.user.fullname,
+            email: result.user.email,
+          });
           setSuccessMessage("User created successfully!");
+
+          setTimeout(() => {
+            router.push("/dashboard");
+          }, 3000);
         }
       }
     }

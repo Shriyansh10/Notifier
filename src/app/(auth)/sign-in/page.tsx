@@ -3,6 +3,12 @@ import React from "react";
 import { useForm } from "react-hook-form";
 import { signInUserWithEmailAndPassword } from "@/actions/auth-actions";
 import { signInInput } from "@/validators/auth-schema";
+import UserContext, {
+  type UserType,
+  type UserContextType,
+} from "@/context/user-context";
+
+import { useRouter } from "next/navigation";
 
 type SignInInputType = {
   email: string;
@@ -10,9 +16,14 @@ type SignInInputType = {
 };
 
 const SignIn = () => {
+
   const [successMessage, setSuccessMessage] = React.useState<string | null>(
     null,
   );
+  const userContext = React.useContext(UserContext);
+          const router = useRouter();
+
+
   const {
     register,
     handleSubmit,
@@ -45,7 +56,7 @@ const SignIn = () => {
         });
       } else {
         const result = await signInUserWithEmailAndPassword(data);
-        if (!result.success) {
+        if (!result.success || !result.user) {
           setSuccessMessage(null);
           setError("root", {
             type: "manual",
@@ -53,7 +64,16 @@ const SignIn = () => {
           });
         } else {
           // Handle successful sign-in, e.g., redirect to dashboard or show success message
+          userContext?.setUser({
+            id: `${result.user.id}`,
+            name: result.user.fullname,
+            email: result.user.email,
+          });
+
           setSuccessMessage("User signed in successfully!");
+          setTimeout(() => {
+              router.push("/dashboard");
+          }, 3000);
         }
       }
     }
