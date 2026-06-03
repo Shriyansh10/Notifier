@@ -1,7 +1,8 @@
 "use client";
 import React from "react";
 import { useForm } from "react-hook-form";
-import { createUser } from "@/actions/auth-actions";
+import { createUserWithEmailAndPassword } from "@/actions/auth-actions";
+import { signUpInput } from "@/validators/auth-schema";
 
 type SignUpInputType = {
   fullname: string;
@@ -11,8 +12,9 @@ type SignUpInputType = {
 };
 
 const SignUp = () => {
-
-  const [successMessage, setSuccessMessage] = React.useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = React.useState<string | null>(
+    null,
+  );
   const {
     register,
     handleSubmit,
@@ -22,21 +24,25 @@ const SignUp = () => {
 
   const onSubmit = async (data: SignUpInputType) => {
     let hasError = false;
-    if (!data.fullname) {
+    if (!data.fullname.trim()) {
       hasError = true;
       setError("fullname", {
         type: "manual",
         message: "Full name is required",
       });
     }
-    if (!data.email) {
+    if (!data.email.trim()) {
       hasError = true;
       setError("email", {
         type: "manual",
         message: "Email is required",
       });
     }
-    if(!data.email.match(/^([A-Z|a-z|0-9](\.|_){0,1})+[A-Z|a-z|0-9]\@([A-Z|a-z|0-9])+((\.){0,1}[A-Z|a-z|0-9]){2}\.[a-z]{2,3}$/)) {
+    if (
+      !data.email.match(
+        /^([A-Z|a-z|0-9](\.|_){0,1})+[A-Z|a-z|0-9]\@([A-Z|a-z|0-9])+((\.){0,1}[A-Z|a-z|0-9]){2}\.[a-z]{2,3}$/,
+      )
+    ) {
       hasError = true;
       setError("email", {
         type: "manual",
@@ -50,11 +56,16 @@ const SignUp = () => {
         message: "Password is required",
       });
     }
-    if(!data.password.match(/^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[a-zA-Z]).{8,}$/)) {
+    if (
+      !data.password.match(
+        /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[a-zA-Z]).{8,}$/,
+      )
+    ) {
       hasError = true;
       setError("password", {
         type: "manual",
-        message: "Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, and one number",
+        message:
+          "Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, and one number",
       });
     }
     if (data.password !== data.confirmPassword) {
@@ -65,16 +76,24 @@ const SignUp = () => {
       });
     }
     if (!hasError) {
-      const result = await createUser(data);
-      if (!result.success) {
-        setSuccessMessage(null);
+      // validate the data before sending it to the server
+      if (!signUpInput.safeParse(data).success) {
         setError("root", {
           type: "manual",
-          message: result.error || "An error occurred",
+          message: "Enter valid data",
         });
       } else {
-        // Handle successful sign-up, e.g., redirect to dashboard or show success message
-        setSuccessMessage("User created successfully!");
+        const result = await createUserWithEmailAndPassword(data);
+        if (!result.success) {
+          setSuccessMessage(null);
+          setError("root", {
+            type: "manual",
+            message: result.error || "An error occurred",
+          });
+        } else {
+          // Handle successful sign-up, e.g., redirect to dashboard or show success message
+          setSuccessMessage("User created successfully!");
+        }
       }
     }
   };
@@ -99,8 +118,8 @@ const SignUp = () => {
           placeholder="Password"
         />
       </div>
+      {errors.password && <p>{errors.password.message}</p>}
       <div>
-        {errors.password && <p>{errors.password.message}</p>}
         <label htmlFor="confirmPassword">Confirm Password</label>
         <input
           type="password"

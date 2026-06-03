@@ -7,16 +7,19 @@ import {
   signInInput,
   signUpInput,
 } from "@/validators/auth-schema";
-import { createToken, verifyToken} from "@/utils/tokens";
+import { createToken } from "@/utils/tokens";
 
 // service for creating a user
-export const createUser = async (signUpInputData: SignUpInputType) => {
+export const createUserWithEmailAndPassword = async (signUpInputData: SignUpInputType) => {
   try {
     // validate the data using zod
     const { fullname, email, password } =
       await signUpInput.parseAsync(signUpInputData);
     if (!fullname || !email || !password) {
-      throw new Error("Missing required fields");
+      return {
+        success: false,
+        error: "Enter all fields",
+      };
     }
 
     // check if user exists
@@ -24,7 +27,7 @@ export const createUser = async (signUpInputData: SignUpInputType) => {
       return {
         success: false,
         error: "User with this email already exists",
-      }
+      };
     }
 
     // hash the password
@@ -48,16 +51,14 @@ export const createUser = async (signUpInputData: SignUpInputType) => {
       { id: `${user.id}`, email: user.email },
       "AccessToken",
     );
-    const refreshToken = createToken(
-      { id: `${user.id}`},
-      "RefreshToken",
-    );
+    const refreshToken = createToken({ id: `${user.id}` }, "RefreshToken");
+
     // store the refresh token in db
     await prisma.user.update({
-      where: {email},
-      data: {refresh_token: refreshToken},
-      select: {id: true}
-    })
+      where: { email },
+      data: { refresh_token: refreshToken },
+      select: { id: true },
+    });
 
     // return the id and tokens
     return {
@@ -70,12 +71,73 @@ export const createUser = async (signUpInputData: SignUpInputType) => {
         refreshToken,
       },
     };
-
   } catch (error) {
     console.error("Error creating user:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : "An error occurred",
+      error: "An error occurred",
+    };
+  }
+};
+
+export const signInUserWithEmailAndPassword = async (signInInputData: SignInInputType) => {
+  try {
+    // validate the data using zod
+    const { email, password } = await signInInput.parseAsync(signInInputData);
+
+    // check if user exists
+    const user = await prisma.user.findMany({
+      where: { email },
+      select: {
+        id: true,
+        email: true,
+        password: true,
+        full_name: true,
+      },
+    });
+
+    if (user.length === 0) {
+      return {
+        success: false,
+        error: "No user found with this email",
+      };
+    }
+
+    // check if password matches - if not return error message
+    if (!(await bcrypt.compare(password, user[0].password))) {
+      return { success: false, error: "Entered wrong email and password" };
+    }
+
+    // create the refresh token and access token
+    const accessToken = createToken(
+      { id: `${user[0].id}`, email: user[0].email },
+      "AccessToken",
+    );
+    const refreshToken = createToken({ id: `${user[0].id}` }, "RefreshToken");
+
+    // store the refresh token in db
+    await prisma.user.update({
+      where: { email },
+      data: { refresh_token: refreshToken },
+      select: { id: true },
+    });
+
+    // return the user data and tokens
+    return {
+      success: true,
+      user: {
+        id: user[0].id,
+        email: user[0].email,
+        fullname: user[0].full_name,
+        accessToken,
+        refreshToken,
+      },
+    };
+  } catch (error) {
+    console.log("Error while signing up", error);
+    return {
+      success: false,
+      error: "An error occurred",
     };
   }
 };
