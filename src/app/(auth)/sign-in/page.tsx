@@ -3,10 +3,7 @@ import React from "react";
 import { useForm } from "react-hook-form";
 import { signInUserWithEmailAndPassword } from "@/actions/auth-actions";
 import { signInInput } from "@/validators/auth-schema";
-import UserContext, {
-  type UserType,
-  type UserContextType,
-} from "@/context/user-context";
+import UserContext from "@/context/user-context";
 
 import { useRouter } from "next/navigation";
 
@@ -66,7 +63,7 @@ const SignIn = () => {
           // Handle successful sign-in, e.g., redirect to dashboard or show success message
           userContext?.setUser({
             id: `${result.user.id}`,
-            name: result.user.fullname,
+            fullname: result.user.fullname,
             email: result.user.email,
           });
 
@@ -83,7 +80,8 @@ const SignIn = () => {
     <form onSubmit={handleSubmit(onSubmit)}>
       <div>
         <label htmlFor="email">Email</label>
-        <input {...register("email")} placeholder="Email" />
+        <input {...register("email")} placeholder="Email"  defaultValue='agarwalshriyansh007@gmail.com'/>
+        
       </div>
       {errors.email && <p>{errors.email.message}</p>}
       <div>
@@ -92,6 +90,7 @@ const SignIn = () => {
           type="password"
           {...register("password")}
           placeholder="Password"
+          defaultValue='Trump$001'
         />
       </div>
       {errors.password && <p>{errors.password.message}</p>}

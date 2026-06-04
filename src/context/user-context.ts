@@ -3,7 +3,7 @@ import React from "react";
 
 export type UserType = {
     id: string,
-    name: string,
+    fullname: string,
     email: string,
 }
 
