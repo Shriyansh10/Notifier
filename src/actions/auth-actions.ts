@@ -3,7 +3,29 @@
 import { cookies } from "next/headers";
 import * as authServices from "@/services/auth-service";
 import { SignUpInputType, SignInInputType } from "@/validators/auth-schema";
-import { verifyToken } from "@/utils/tokens";
+import { decodeToken, verifyToken } from "@/utils/tokens";
+
+const setCookiesForUser = async ({
+  accessToken,
+  refreshToken,
+}: {
+  accessToken: string;
+  refreshToken: string;
+}) => {
+  const cookiesStore = await cookies();
+  cookiesStore.set("accessToken", accessToken!, {
+    httpOnly: true,
+    secure: true,
+    sameSite: "lax",
+    maxAge: 7 * 24 * 60 * 60, // 7 day
+  });
+  cookiesStore.set("refreshToken", refreshToken!, {
+    httpOnly: true,
+    secure: true,
+    sameSite: "lax",
+    maxAge: 7 * 24 * 60 * 60, // 7 day
+  });
+};
 
 export async function createUserWithEmailAndPassword(
   signUpInputData: SignUpInputType,
@@ -16,20 +38,11 @@ export async function createUserWithEmailAndPassword(
   });
 
   if (userObj.user) {
-    const cookiesStore = await cookies();
     const user = userObj.user;
 
-    cookiesStore.set("accessToken", user.accessToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "lax",
-      maxAge: 7 * 24 * 60 * 60, // 7 day
-    });
-    cookiesStore.set("refreshToken", user.refreshToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "lax",
-      maxAge: 7 * 24 * 60 * 60, // 7 day
+    await setCookiesForUser({
+      accessToken: user.accessToken!,
+      refreshToken: user.refreshToken!,
     });
     return {
       success: true,
@@ -49,20 +62,11 @@ export async function signInUserWithEmailAndPassword(
   });
 
   if (userObj.user) {
-    const cookiesStore = await cookies();
     const user = userObj.user;
 
-    cookiesStore.set("accessToken", user.accessToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "lax",
-      maxAge: 7 * 24 * 60 * 60, // 7 day
-    });
-    cookiesStore.set("refreshToken", user.refreshToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "lax",
-      maxAge: 7 * 24 * 60 * 60, // 7 day
+    await setCookiesForUser({
+      accessToken: user.accessToken,
+      refreshToken: user.refreshToken,
     });
     return {
       success: true,
@@ -79,41 +83,43 @@ export async function signOutUser() {
   const cookiesStore = await cookies();
 
   // fetch the email from the token
-  const {decoded} = verifyToken(cookiesStore.get("accessToken")?.value || "", "AccessToken");
+  const { decoded } = verifyToken(
+    cookiesStore.get("accessToken")?.value || "",
+    "AccessToken",
+  );
 
   cookiesStore.delete("accessToken");
   cookiesStore.delete("refreshToken");
 
   // call the sign out service to clear the refresh token from the db
-  if(decoded && "email" in decoded){
-    await authServices.signOutUser(decoded.email);
+  if (decoded && "email" in decoded) {
+    await authServices.revokeRefreshTokenFromDBUsingEmail(decoded.email);
   }
 
   return { success: true };
 }
 
-export async function getUserWithToken() {
-
-  console.log('entered getUserWithToken controller function')
-  // todo - verify token using middleware
+export async function getUserDetailsWithToken() {
   const cookiesStore = await cookies();
-  const token = cookiesStore.get("accessToken")?.value;
-  if (!token) {
-    return { success: false, error: "No token found" };
-  }
 
-  const verificationResponse = verifyToken(token, "AccessToken");
-  if (!verificationResponse.success) {
-    return { success: false, error: "Invalid token", statusCode: 401 };
-  }
+  // fetch the access token from the cookie
+  const token = cookiesStore.get("accessToken")?.value;
+
+  // if no token found in the cookie
+  if (!token) return { success: false, error: "No token found" };
+
+  // fetch the email from the access token
+  const verificationResponse = decodeToken(token);
+  const { decoded } = verificationResponse;
 
   // check the user in the db using the id from the token
   let email = "";
-  if("email" in verificationResponse.decoded!){
-  email = verificationResponse.decoded!.email; // get the user id from the token after verification
+  if ("email" in decoded!) {
+    email = decoded!.email;
   }
 
-  const userObj = await authServices.getUserFromToken(email);
+  // get the user data from the db using the email
+  const userObj = await authServices.getUserDetailsWithToken(email);
 
   if (userObj.user) {
     const user = userObj.user;
@@ -127,11 +133,9 @@ export async function getUserWithToken() {
   return { success: false, error: "An error occurred" };
 }
 
-
 export async function resetTokens() {
-  console.log('entered resetTokens controller function')
-  
   const cookiesStore = await cookies();
+
   cookiesStore.delete("accessToken");
 
   // get the refresh token from the cookie
@@ -140,8 +144,19 @@ export async function resetTokens() {
     return { success: false, error: "No refresh token found" };
   }
 
-  const verificationResponse = verifyToken(refreshTokenInCookie, "RefreshToken");
+  const verificationResponse = verifyToken(
+    refreshTokenInCookie,
+    "RefreshToken",
+  );
   if (!verificationResponse.success) {
+    const decodedResponse = decodeToken(refreshTokenInCookie);
+    if (decodedResponse.decoded && "id" in decodedResponse.decoded) {
+      await authServices.revokeRefreshTokenFromDBUsingId(
+        decodedResponse.decoded.id,
+      );
+    }
+
+    cookiesStore.delete("refreshToken");
     return { success: false, error: "Invalid refresh token" };
   }
 
@@ -150,22 +165,14 @@ export async function resetTokens() {
     await authServices.resetTokens(refreshTokenInCookie);
 
   if (success) {
-    cookiesStore.set("accessToken", accessToken!, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "lax",
-      maxAge: 7 * 24 * 60 * 60, // 7 day
-    });
-    cookiesStore.set("refreshToken", refreshToken!, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "lax",
-      maxAge: 7 * 24 * 60 * 60, // 7 day
+    await setCookiesForUser({
+      accessToken: accessToken!,
+      refreshToken: refreshToken!,
     });
     return {
       success: true,
     };
-  }else{
+  } else {
     return {
       success: false,
       error: "An error occurred while resetting tokens",

@@ -3,10 +3,10 @@
 import React from "react";
 import UserContext, { type UserContextType } from "@/context/user-context";
 import { useRouter } from "next/navigation";
+import { verifyTokenAuthentication } from "@/middlewares/client/client-auth-middleware";
 
 import {
-  getUserWithToken,
-  resetTokens,
+  getUserDetailsWithToken,
   signOutUser,
 } from "@/actions/auth-actions";
 
@@ -23,30 +23,32 @@ const Dashboard = () => {
     }
   };
 
-  const handdleFetchUserData = async () => {
-    // check if the access token is valid
-    const originalResponse = await getUserWithToken();
-    if (originalResponse.error && originalResponse.statusCode === 401) {
-      console.log("Access token expired, attempting to reset tokens...");
-      const response = await resetTokens();
-      if (!response.success) {
-        // navigate to sign in page
-        // router.push("/sign-in");
-        console.log("Failed to reset tokens:");
-      } else {
-        console.log("Tokens reset successfully.");
-        const responseAfterResettingTokens = await getUserWithToken();
+  
+  const handleFetchUserData = async () => {
+
+    // check if the access token is valid, if not 401 statuscode will be returned, otherwise the user will be asked to sign in again to start a new session
+    const response = await verifyTokenAuthentication();
+
+    // if the tokens are valid or reset successfully
+    if (response.status === true) {
+
+      // fetch the user data using the new access token
+      const responseAfterResettingTokens = await getUserDetailsWithToken(); // this will be a controller fn not a middleware fn
         if (responseAfterResettingTokens.success && responseAfterResettingTokens.user) {
           userContext?.setUser({
             id: `${responseAfterResettingTokens.user.id}`,
             fullname: responseAfterResettingTokens.user.fullname,
             email: responseAfterResettingTokens.user.email,
           });
-          console.log("User data from token:", responseAfterResettingTokens.user);
         }
-      }
+    } 
+    // if the tokens are invalid and couldn't be reset successfully, handle as per requirement
+    else {
+      userContext?.setUser(null);
+      console.log("Sign in again to start a new session");
     }
-  };
+  }
+
 
   return (
     <div>
@@ -59,7 +61,7 @@ const Dashboard = () => {
         <button
           onClick={
             // for testing - get the user data from the token and log it
-            handdleFetchUserData
+            handleFetchUserData
           }
         >
           Get User Data

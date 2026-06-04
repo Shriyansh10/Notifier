@@ -24,7 +24,6 @@ export const createToken = (
         algorithm: "HS256",
       },
     );
-    console.log("Generated access token:", generatedToken);
     return generatedToken;
   } else {
     const { id } = payload;
@@ -33,7 +32,6 @@ export const createToken = (
       expiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN as StringValue,
       algorithm: "HS256",
     });
-    console.log("Generated refresh token:", generatedToken);
     return generatedToken;
   }
 };
@@ -62,10 +60,29 @@ export const verifyToken = (
       decoded,
     };
   } catch (error) {
-    console.log("Error while verifying token", error);
+    console.log("Error while verifying token:", error);
     return {
       success: false,
       error: "Invalid token",
     };
   }
 };
+
+export const decodeToken = (token: string) => {
+  try {
+    const decoded = jwt.decode(token) as CreateAccessTokenType | CreateRefreshTokenType;
+    return {
+      success: true,
+      decoded,
+    };
+  }
+    catch (error) { 
+
+    console.log("Error while decoding token:", error);
+    return {
+      success: false,
+      error: "Invalid token",
+    };
+  }
+}
+

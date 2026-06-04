@@ -146,8 +146,8 @@ export const signInUserWithEmailAndPassword = async (
   }
 };
 
-export const getUserFromToken = async (email: string) => {
-  console.log('entered getUserFromToken service function')
+export const getUserDetailsWithToken = async (email: string) => {
+
   try {
     // get the user from the db using the email from the token
     const user = await prisma.user.findFirst({
@@ -186,7 +186,6 @@ export const getUserFromToken = async (email: string) => {
 };
 
 export const resetTokens = async (refreshTokenInCookie: string) => {
-  console.log('entered resetTokens service function')
   try {
 
     // validate the token and get the email from it
@@ -233,11 +232,23 @@ export const resetTokens = async (refreshTokenInCookie: string) => {
 };
 
 
-export const signOutUser = async (email: string) => {
+export const revokeRefreshTokenFromDBUsingEmail = async (email: string) => {
 
   // clear the refresh token from the db
   await prisma.user.update({
     where: { email },
+    data: { refresh_token: null },
+    select: { id: true },
+  });
+
+  return { success: true };
+}
+
+export const revokeRefreshTokenFromDBUsingId = async (id: string) => {
+
+  // clear the refresh token from the db
+  await prisma.user.update({
+    where: { id: parseInt(id) },
     data: { refresh_token: null },
     select: { id: true },
   });
