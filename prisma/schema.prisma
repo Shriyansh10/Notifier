@@ -20,7 +20,24 @@ model User {
   password String
 
   refresh_token String?
+  notes Notes[]
 
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
+
+model Notes {
+  id  Int @id @default(autoincrement())
+
+  title String @unique
+  content String
+  is_completed Boolean @default(false)
+  deadline DateTime?
+
+  userId      Int
+  user        User   @relation(fields: [userId], references: [id])
+
+  is_deleted DateTime?
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 }

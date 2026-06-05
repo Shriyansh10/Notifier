@@ -102,13 +102,13 @@ const SignUp = () => {
           // Handle successful sign-up, e.g., redirect to dashboard or show success message
           userContext?.setUser({
             id: `${result.user.id}`,
-            name: result.user.fullname,
+            fullname: result.user.fullname,
             email: result.user.email,
           });
           setSuccessMessage("User created successfully!");
 
           setTimeout(() => {
-            router.push("/dashboard");
+            router.push("/notes");
           }, 3000);
         }
       }

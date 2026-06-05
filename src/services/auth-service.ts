@@ -74,7 +74,7 @@ export const createUserWithEmailAndPassword = async (
       },
     };
   } catch (error) {
-    console.error("Error creating user:", error);
+    console.log("Error creating user:", error);
     return {
       success: false,
       error: "An error occurred",

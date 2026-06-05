@@ -10,7 +10,7 @@ import {
   signOutUser,
 } from "@/actions/auth-actions";
 
-const Dashboard = () => {
+const Notes = () => {
   const userContext = React.useContext(UserContext) as UserContextType;
   const router = useRouter();
 
@@ -49,26 +49,23 @@ const Dashboard = () => {
     }
   }
 
+  React.useEffect(() => {
+  // check if the access token is valid, if not 401 statuscode will be returned, otherwise the user will be asked to sign in again to start a new session
+  handleFetchUserData();
+  
+  }, []);
+
 
   return (
     <div>
-      <h1>Dashboard</h1>
+      <h1>Notes</h1>
       <p>Welcome, {userContext?.user?.fullname}!</p>
       <div>
         <button onClick={handleSignOut}>Sign Out</button>
       </div>
-      <div>
-        <button
-          onClick={
-            // for testing - get the user data from the token and log it
-            handleFetchUserData
-          }
-        >
-          Get User Data
-        </button>
-      </div>
+      
     </div>
   );
 };
 
-export default Dashboard;
+export default Notes;
