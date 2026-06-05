@@ -20,17 +20,17 @@ model User {
   password String
 
   refresh_token String?
-  notes Notes[]
+  notes Note[]
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 }
 
-model Notes {
+model Note {
   id  Int @id @default(autoincrement())
 
   title String @unique
-  content String
+  content String?
   is_completed Boolean @default(false)
   deadline DateTime?
 
