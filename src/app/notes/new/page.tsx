@@ -31,6 +31,8 @@ const NewForm = () => {
     },
   });
 
+  const todayDate = new Date().toISOString().split("T")[0];
+
   const onSubmit = async (data: FormData) => {
 
     await verifyTokenAuthentication();
@@ -43,12 +45,21 @@ const NewForm = () => {
       });
       hasError = true;
     }
-    if(data.content && (data.content.trim().length < 5 || data.content.trim().length > 200)) {
+    if(data.content.trim().length < 5 || data.content.trim().length > 200) {
       setError("content", {
         type: "manual",
         message: "Content must be between 5 and 200 characters",
       });
       hasError = true;
+    }
+    if(!data.deadline?.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      
+        setError("deadline", {
+          type: "manual",
+          message: "Invalid deadline format, expected YYYY-MM-DD",
+        });
+        hasError = true;
+      
     }
 
     if(data.deadline && data.deadline < today) {
@@ -108,7 +119,7 @@ const NewForm = () => {
 
         <div>
           <label>Deadline</label>
-          <input type="date" {...register("deadline")} min={today} />
+          <input type="date" {...register("deadline")} min={todayDate} defaultValue={todayDate} />
         </div>
         {errors.deadline && <p style={{color: "red"}}>{errors.deadline.message}</p>}
 
