@@ -5,7 +5,12 @@ import { decodeToken } from "@/utils/tokens";
 import { NoteInput, type NoteInputType } from "@/validators/notes-schema";
 import * as notesService from "@/services/notes-service";
 
-export { createNote, fetchNotesForUserUsingUserId, deleteNoteUsingNoteId };
+export {
+  createNote,
+  fetchNotesForUserUsingUserId,
+  deleteNoteUsingNoteId,
+  updateNoteUsingNoteId,
+};
 
 const fetchTokenFromCookies = async (
   tokenType: "accessToken" | "refreshToken",
@@ -64,13 +69,13 @@ const fetchNotesForUserUsingUserId = async () => {
   const userId = decoded.id;
 
   // call the fetchNotesForUserUsingUserId service to get the notes for the user from the db
-  const { success, notes, error } =
+  const { success, notes } =
     await notesService.fetchNotesForUserUsingUserId(userId);
 
   if (!success) {
     return {
       success: false,
-      error: error || "An error occurred while fetching the notes for the user",
+      error:  "An error occurred while fetching the notes for the user",
     };
   }
 
@@ -95,10 +100,35 @@ const deleteNoteUsingNoteId = async (noteId: string) => {
       message: "Note deleted successfully",
     };
   } catch (error) {
-    
+    console.log(error);
     return {
       success: false,
-      error: error || "An error occurred while deleting the note",
+      error: error instanceof Error ? error.message : "An error occurred while deleting the note",
     };
   }
 };
+
+const updateNoteUsingNoteId = async (noteId: string, noteData: NoteInputType) => {
+  try {
+    const { success } = await notesService.updateNoteUsingNoteId(noteId, noteData);
+    if (!success) {
+      return {
+        success: false,
+        error: "An error occurred while updating the note",
+      };
+    }
+    return {
+      success: true,
+      message: "Note updated successfully",
+    };
+  }
+    catch (error) {
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "An error occurred while deleting the note",
+    };
+  }
+}

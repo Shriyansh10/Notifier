@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { NoteInput, type NoteInputType } from "@/validators/notes-schema";
 
-export { createNote, fetchNotesForUserUsingUserId, deleteNoteUsingNoteId };
+export { createNote, fetchNotesForUserUsingUserId, deleteNoteUsingNoteId, updateNoteUsingNoteId };
+
 
 const createNote = async (noteData: NoteInputType, userId: number) => {
   try {
@@ -15,7 +16,6 @@ const createNote = async (noteData: NoteInputType, userId: number) => {
     if (existingNote) {
       return {
         success: false,
-        error: "Note with this title already exists",
       };
     }
 
@@ -43,7 +43,6 @@ const createNote = async (noteData: NoteInputType, userId: number) => {
     console.log(error);
     return {
       success: false,
-      error: "Internal server error while creating the note",
     };
   }
 };
@@ -55,7 +54,7 @@ const fetchNotesForUserUsingUserId = async (userId: string) => {
         userId: +userId,
       },
       orderBy: {
-        created_at: "desc",
+        deadline: "asc",
       },
       select: {
         id: true,
@@ -82,24 +81,49 @@ const fetchNotesForUserUsingUserId = async (userId: string) => {
     console.log(error);
     return {
       success: false,
-      error: "Internal server error while fetching the notes for the user",
     };
   }
 };
 
 const deleteNoteUsingNoteId = async (noteId: string) => {
   try {
-    const deletedNote = await prisma.note.delete({ where: { id: +noteId }});
-    
+    const deletedNote = await prisma.note.delete({ where: { id: +noteId } });
+
     if (!deletedNote) return { success: false };
-    return {success: true}
-
+    return { success: true };
   } catch (error) {
-
     console.log(error);
     return {
       success: false,
-      error: "Internal server error while deleting the note",
+    };
+  }
+};
+
+const updateNoteUsingNoteId = async (
+  noteId: string,
+  noteData: NoteInputType,
+) => {
+  try {
+    const { title, content, isCompleted, deadline } =
+      await NoteInput.parseAsync(noteData);
+
+    const updatedNote = await prisma.note.update({
+      where: { id: +noteId },
+
+      data: {
+        title,
+        content: content || "",
+        is_completed: isCompleted,
+        deadline: new Date(deadline),
+      },
+    });
+
+    if (!updatedNote) return { success: false };
+    return { success: true };
+  } catch (error) {
+    console.log(error);
+    return {
+      success: false,
     };
   }
 };
