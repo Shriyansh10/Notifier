@@ -117,15 +117,15 @@ const Notes = () => {
       {notes ? (
         <div>
           {notes.map((note) => (
-            <>
+            <div key={note.id}>
               <NoteCard
-                key={note.id}
                 title={note.title}
                 content={note.content || "No description provided"}
                 isCompleted={note.is_completed}
                 deadline={note.deadline.split("T")[0]}
                 createdAt={note.created_at}
               />
+
               <button
                 onClick={() =>
                   handleButtonClick(`/notes/${note.id}/edit`, note)
@@ -138,7 +138,7 @@ const Notes = () => {
               >
                 Delete
               </button>
-            </>
+            </div>
           ))}
         </div>
       ) : (
