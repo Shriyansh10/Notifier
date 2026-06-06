@@ -70,7 +70,7 @@ const NewForm = () => {
       if(success) {
         setIsSubmitting(false);
         setSubmitSuccess(message);
-        router.push("/notes");
+        router.replace("/notes");
       }
       else {
         setIsSubmitting(false);
@@ -79,7 +79,7 @@ const NewForm = () => {
         if(error === "Invalid token") {
           // if the error is due to invalid token, redirect to login page after 2 seconds
           setTimeout(() => {
-            router.push("/login");
+            router.replace("/sign-in");
           }, 2000);
         }
       }
@@ -118,6 +118,8 @@ const NewForm = () => {
         <button type="submit" disabled={isSubmitting}>
           {isSubmitting ? "Creating..." : "Create"}
         </button>
+
+        <button type="button" onClick={() => router.replace("/notes")} disabled={isSubmitting}>Go Back</button>
       </form>
     </div>
   );

@@ -1,7 +1,10 @@
+import DeleteModal from "@/components/delete-modal";
 import React from "react";
 
-const NotePage = ({ params }: { params: { id: string } }) => {
-  return <div>Note {params.id}</div>;
+const NotePage = async ({ params }: { params: Promise<{ id: string }> }) => {
+  const { id } = await params;
+
+  return <DeleteModal />;
 };
 
-export default NotePage; 
+export default NotePage;

@@ -108,7 +108,7 @@ const SignUp = () => {
           setSuccessMessage("User created successfully!");
 
           setTimeout(() => {
-            router.push("/notes");
+            router.replace("/notes");
           }, 3000);
         }
       }

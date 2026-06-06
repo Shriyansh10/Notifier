@@ -69,7 +69,7 @@ const SignIn = () => {
 
           setSuccessMessage("User signed in successfully!");
           setTimeout(() => {
-              router.push("/notes");
+              router.replace("/notes");
           }, 3000);
         }
       }
